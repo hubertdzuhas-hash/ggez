@@ -5,7 +5,8 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 W, H = 1920, 1080
 GOLD, BG, WHITE, RED = (245,183,0), (20,20,20), (255,255,255), (230,57,70)
 GREY = (120,120,120)
-ANTON = "/tmp/claude-0/-home-user-ggez/0d8ec3d4-9ab0-5df2-b74e-8f847ab040a2/scratchpad/Anton.ttf"
+import os
+ANTON = os.environ.get("ANTON_TTF", os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts", "Anton-Regular.ttf"))
 INTER = "/usr/share/fonts/opentype/inter/Inter-Bold.otf"
 INTER_B = "/usr/share/fonts/opentype/inter/Inter-Black.otf"
 
@@ -110,3 +111,22 @@ def captions(text, target=230):
         else: cur = (cur + " " + s).strip()
     if cur: out.append(cur)
     return out
+
+def cold_card(caption, path, n):
+    """Cold open: duży tekst na czerni, bez nagłówka - jak zwiastun."""
+    img = background("cold" + str(n))
+    d = ImageDraw.Draw(img)
+    size = 96
+    while True:
+        f = F(ANTON, size)
+        lines = wrap(d, caption.upper(), f, 1600)
+        if len(lines) * size * 1.15 <= 700 or size <= 56: break
+        size -= 6
+    y = (H - len(lines) * size * 1.15) / 2
+    for line in lines:
+        x = (W - d.textlength(line, font=f)) / 2
+        for w in line.split():
+            col = GOLD if w.strip(".,!?").lower() in KEY | {"2001", "2024", "grammys", "thirty"} else WHITE
+            d.text((x, y), w, font=f, fill=col); x += d.textlength(w + " ", font=f)
+        y += size * 1.15
+    img.save(path)
